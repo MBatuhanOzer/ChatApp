@@ -1,12 +1,14 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.shortcuts import render
 from django.db import IntegrityError
 
 from .models import User
 
 
-login_required(login_url="/login", redirect_field_name=None)
+@login_required(login_url="/login", redirect_field_name=None)
 def index(request):
     return render(request, "chat/index.html")
 
@@ -20,6 +22,9 @@ def login_view(request):
     :param request: The request object
     :return: A HTTP response
     """
+    if request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("index"))
+
     if request.method == "POST":
         # Get the username and password from the request
         username = request.POST.get("username", None)
@@ -33,7 +38,9 @@ def login_view(request):
         # If the user is authenticated, log them in
         if user is not None:
             login(request, user)
-            return render(request, "chat/index.html")
+            return HttpResponseRedirect(reverse("index"))@login_required(login_url="/login", redirect_field_name=None)
+            def index(request):
+                return render(request, "chat/index.html")
         else:
             return render(request, "chat/login.html", {"error": "Invalid username or password"})
     else:
@@ -50,6 +57,10 @@ def register(request):
     :param request: The request object
     :return: A HTTP response
     """
+
+    if request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("index"))
+
     if request.method == "POST":
         username = request.POST.get("username", None)
         password = request.POST.get("password", None)
@@ -65,7 +76,7 @@ def register(request):
         # If the user is created, log them in
         if user is not None:
             login(request, user)
-            return render(request, "chat/index.html")
+            return HttpResponseRedirect(reverse("index"))
         else:
             return render(request, "chat/register.html", {"error": "An error occurred while registering the user."})
         
@@ -82,4 +93,4 @@ def logout_view(request):
     :return: A HTTP response
     """
     logout(request)
-    return render(request, "chat/login.html")
+    return HttpResponseRedirect(reverse("login"))
