@@ -38,9 +38,7 @@ def login_view(request):
         # If the user is authenticated, log them in
         if user is not None:
             login(request, user)
-            return HttpResponseRedirect(reverse("index"))@login_required(login_url="/login", redirect_field_name=None)
-            def index(request):
-                return render(request, "chat/index.html")
+            return HttpResponseRedirect(reverse("index"))
         else:
             return render(request, "chat/login.html", {"error": "Invalid username or password"})
     else:
