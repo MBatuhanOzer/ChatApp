@@ -33,6 +33,7 @@
                     <div class="card-body">
                         <h3 class="card-title text-center">Login</h3>
                         <form method="post" action="{% url 'login' %}">
+                            {% csrf_token %}
                             <div class="form-group">
                               <input autocomplete="off" autofocus class="form-control mx-auto w-auto" name="username" placeholder="Username" type="text" required>
                             </div>
