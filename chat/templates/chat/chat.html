@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+    <script defer src="{% static 'chat/chat.js' %}"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Chat with {{ chat.other_user.username }}</h1>
+            <a href="{% url 'index' %}">Back to Chats</a>
+        </header>
+        <div class="chat-box" id="chat-box">
+            {% for message in chat.messages %}
+                <div class="message {{ message.sender == user ? 'right' : 'left' }}">
+                    <p>{{ message.content }}</p>
+                </div>
+            {% endfor %}
+        </div>
+        <form id="message-form">
+            <textarea id="message-input" placeholder="Type your message..."></textarea>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+</body>
+</html>
