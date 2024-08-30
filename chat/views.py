@@ -1,11 +1,12 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden, JsonResponse
 from django.urls import reverse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.db import IntegrityError
 
-from .models import User
+from .models import User, Chat, Message
+from .consumers import ChatConsumer
 
 
 @login_required(login_url="/login", redirect_field_name=None)
@@ -92,3 +93,29 @@ def logout_view(request):
     """
     logout(request)
     return HttpResponseRedirect(reverse("login"))
+
+def chat(request, chat_id):
+    """
+    Renders the chat page.
+
+    :param request: The request object
+    :param chat_id: The ID of the chat
+    :return: A HTTP response
+    """
+    chat = get_object_or_404(Chat, id=chat_id)
+    if request.user not in [chat.user1, chat.user2]:
+        return HttpResponseForbidden("You are not part of this chat.")
+    return render(request, "chat/chat.html", {"chat": chat})
+
+@login_required(login_url="/login", redirect_field_name=None)
+def search_users(request):
+    query = request.GET.get('query', '')
+    users = User.objects.filter(username__icontains=query).exclude(id=request.user.id)
+    user_list = [{'id': user.id, 'username': user.username} for user in users]
+    return JsonResponse(user_list, safe=False)
+
+@login_required(login_url="/login", redirect_field_name=None)
+def start_chat(request, user2_id):
+    user2 = User.objects.get(id=user2_id)
+    chat_id = ChatConsumer.get_chat_id(request.user.id, user2.id)
+    return HttpResponseRedirect(reverse('chat', args=[chat_id]))
