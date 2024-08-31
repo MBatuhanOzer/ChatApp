@@ -132,13 +132,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def ensure_chat_exists(self, user1, user2):
         """Ensure that a chat exists between the participants. Create if not."""
         # Generate a unique chat ID
-        chat_id = self.get_chat_id(user1.id, user2.id)
+        chat = Chat.objects.filter(participants__id=user1.id).filter(participants__id=user2.id).first()
 
-        # Check if chat exists
-        chat, created = Chat.objects.get_or_create(id=chat_id)
-        
-        if created:
-            # If the chat was created, add both users as participants
+        if not chat:
+            chat_id = self.get_chat_id(user1.id, user2.id)
+            chat = Chat(id=chat_id)
+            chat.save()
             chat.participants.add(user1, user2)
             chat.save()
 
