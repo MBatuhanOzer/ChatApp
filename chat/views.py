@@ -94,6 +94,11 @@ def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse("login"))
 
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseForbidden
+from django.contrib.auth.models import User
+from .models import Chat
+
 def chat(request, chat_id):
     """
     Renders the chat page.
@@ -102,10 +107,33 @@ def chat(request, chat_id):
     :param chat_id: The ID of the chat
     :return: A HTTP response
     """
-    chat = get_object_or_404(Chat, id=chat_id)
-    if request.user not in Chat.objects.get(id=chat_id).participants.all():
+    chat = Chat.objects.filter(id=chat_id).first()
+
+    # Check if chat exists; if not, check for the participants
+    if not chat:
+        user2_id = request.GET.get('user2_id')  # Assuming you get user2_id from a GET parameter
+
+        if user2_id:
+            try:
+                user2 = User.objects.get(id=user2_id)
+                # Create the chat if the participants are valid
+                if request.user != user2:  # Ensure user is not creating a chat with themselves
+                    chat = Chat.objects.create()
+                    chat.participants.add(request.user, user2)
+                    chat.save()
+                else:
+                    return HttpResponseForbidden("Cannot create a chat with yourself.")
+            except User.DoesNotExist:
+                return HttpResponseForbidden("Invalid user.")
+        else:
+            return HttpResponseForbidden("No chat found and no user specified to create a chat.")
+
+    # Check if the user is a participant in the chat
+    if request.user not in chat.participants.all():
         return HttpResponseForbidden("You are not part of this chat.")
+
     return render(request, "chat/chat.html", {"chat": chat})
+
 
 @login_required(login_url="/login", redirect_field_name=None)
 def search_users(request):
