@@ -7,6 +7,10 @@ from django.core.exceptions import ObjectDoesNotExist
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        '''
+        Called when the websocket is handshaking as part of initial connection.
+        
+        '''
         self.user = self.scope["user"]
 
         # Check if user is authenticated
