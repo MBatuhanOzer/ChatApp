@@ -136,8 +136,17 @@ def start_chat(request, user2_id):
     :param user2_id: The ID of the user to start the chat with
     :return: A HTTP response
     '''
-    user2 = User.objects.get(id=user2_id)
-    if user2 is None:
+    try:
+        user2 = User.objects.get(id=user2_id)
+    except User.DoesNotExist:
         return HttpResponseNotFound("User not found")
-    chat_id = ChatConsumer.get_chat_id(user1_id=request.user.id, user2_id=user2.id)
-    return HttpResponseRedirect(reverse('chat', args=[chat_id]))
+
+    chat = Chat.objects.filter(participants__id=request.user.id).filter(participants__id=user2.id).first()
+
+    if not chat:
+        chat_id = ChatConsumer.get_chat_id(user1_id=request.user.id, user2_id=user2.id)
+        chat = Chat(id=chat_id)
+        chat.save()
+        chat.participants.add(request.user, user2)
+
+    return HttpResponseRedirect(reverse('chat', args=[chat.id]))
