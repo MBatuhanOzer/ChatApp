@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput.addEventListener('input', async () => {
         const query = searchInput.value;
-        if (query.length < 3) {
+        if (query.trim() === '') {
             searchResults.innerHTML = '';
             return;
         }

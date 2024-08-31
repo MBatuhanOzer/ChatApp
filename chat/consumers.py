@@ -138,6 +138,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             chat.participants.add(user1, user2)
             chat.save()
 
-    def get_chat_id(self, user1_id, user2_id):
+    @staticmethod
+    def get_chat_id(user1_id, user2_id):
         """Generate a unique chat ID based on user IDs."""
         return f"{min(user1_id, user2_id)}_{max(user1_id, user2_id)}"

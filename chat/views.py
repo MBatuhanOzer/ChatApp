@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseRedirect, HttpResponseForbidden, JsonResponse, HttpResponseNotFound
 from django.urls import reverse
 from django.shortcuts import render, get_object_or_404
 from django.db import IntegrityError
@@ -103,12 +103,18 @@ def chat(request, chat_id):
     :return: A HTTP response
     """
     chat = get_object_or_404(Chat, id=chat_id)
-    if request.user not in [chat.user1, chat.user2]:
+    if request.user not in Chat.objects.get(id=chat_id).participants.all():
         return HttpResponseForbidden("You are not part of this chat.")
     return render(request, "chat/chat.html", {"chat": chat})
 
 @login_required(login_url="/login", redirect_field_name=None)
 def search_users(request):
+    '''
+    Searches for users with the given query.
+
+    :param request: The request object
+    :return: A JSON response
+    '''
     query = request.GET.get('query', '')
     users = User.objects.filter(username__icontains=query).exclude(id=request.user.id)
     user_list = [{'id': user.id, 'username': user.username} for user in users]
@@ -116,6 +122,15 @@ def search_users(request):
 
 @login_required(login_url="/login", redirect_field_name=None)
 def start_chat(request, user2_id):
+    '''
+    Starts a new chat with the given user.
+
+    :param request: The request object
+    :param user2_id: The ID of the user to start the chat with
+    :return: A HTTP response
+    '''
     user2 = User.objects.get(id=user2_id)
-    chat_id = ChatConsumer.get_chat_id(request.user.id, user2.id)
+    if user2 is None:
+        return HttpResponseNotFound("User not found")
+    chat_id = ChatConsumer.get_chat_id(user1_id=request.user.id, user2_id=user2.id)
     return HttpResponseRedirect(reverse('chat', args=[chat_id]))
