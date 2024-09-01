@@ -94,7 +94,7 @@ def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse("login"))
 
-
+@login_required(login_url="/login", redirect_field_name=None)
 def chat(request, chat_id):
     """
     Renders the chat page.

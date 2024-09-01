@@ -1,8 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import Chat, Message
-from django.contrib.auth.models import User
+from .models import Chat, Message, User
 from django.core.exceptions import ObjectDoesNotExist
 
 class ChatConsumer(AsyncWebsocketConsumer):
