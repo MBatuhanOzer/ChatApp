@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const chatWindow = document.getElementById('chat-window');
 
 
-    // Initialize WebSocket connection
     const chatSocket = new WebSocket(
         'ws://' + window.location.host + '/ws/chat/' + user2Id + '/'
     );
@@ -23,14 +22,20 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     function appendMessage(message, senderType, senderUsername) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message', senderType);
-        messageElement.textContent = `${senderUsername}: ${message}`;
-        chatWindow.appendChild(messageElement);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
+        // Check if message already exists to prevent duplicates
+        const messageText = `${senderUsername}: ${message}`;
+        const existingMessages = Array.from(chatWindow.querySelectorAll('.message'))
+            .map(msg => msg.textContent);
+
+        if (!existingMessages.includes(messageText)) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', senderType);
+            messageElement.textContent = messageText;
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
     }
 
-    // Handle form submission to send a message
     messageForm.addEventListener('submit', function (event) {
         event.preventDefault();
         const message = messageInput.value.trim();

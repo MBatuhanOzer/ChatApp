@@ -6,7 +6,7 @@ from django.conf import settings
 from .models import Chat, Message, User
 
 # Create a Redis client
-redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Adjust Redis settings as necessary
+redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Update Redis configuration if necessary
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -44,11 +44,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Load last 25 messages from Redis
+        # Load last 25 messages from Redis in the correct order
         previous_messages = await self.get_last_25_messages()
 
         # Send previous messages to the WebSocket
-        for message in previous_messages:
+        for message in reversed(previous_messages):  # Reverse to maintain correct order
             await self.send(text_data=json.dumps(message))
 
     async def disconnect(self, close_code):
@@ -75,6 +75,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'sender_username': self.user.username
         }
 
+        await self.store_message_in_redis(message)
+
         await self.channel_layer.group_send(
             self.room_group_name,
             message
@@ -85,14 +87,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_id = event['sender_id']
         sender_username = event['sender_username']
 
-        # Store message in Redis
-        await self.store_message_in_redis({
-            'message': message,
-            'sender_id': sender_id,
-            'sender_username': sender_username
-        })
-
-        # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
             'sender_id': sender_id,
@@ -118,14 +112,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         decoded_messages = []
         for message in messages:
             try:
-                # Decode and load each message
-                decoded_message = json.loads(message.decode('utf-8'))
-                decoded_messages.append(decoded_message)
+                # Check if the message is not empty before decoding
+                if message:
+                    decoded_message = json.loads(message.decode('utf-8'))
+                    decoded_messages.append(decoded_message)
             except json.JSONDecodeError:
-                # Skip messages that cannot be decoded
+                # Log the error or handle it as needed
+                print("Invalid JSON data found in Redis, skipping entry.")
                 continue
     
         return decoded_messages
+
 
     @database_sync_to_async
     def check_user_in_chat(self, user, chat_id):
