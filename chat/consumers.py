@@ -1,15 +1,15 @@
 import json
+import redis
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from django.conf import settings
 from .models import Chat, Message, User
-from django.core.exceptions import ObjectDoesNotExist
+
+# Create a Redis client
+redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Update with your Redis configuration
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        '''
-        Called when the websocket is handshaking as part of initial connection.
-        
-        '''
         self.user = self.scope["user"]
 
         # Check if user is authenticated
@@ -77,26 +77,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         # Save message to the database synchronously
-        await database_sync_to_async(self.save_message)(self.room_name, self.user, message)
+        await self.save_message(self.room_name, self.user, message)
 
         # Send message to room group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': message
+                'message': message,
+                'sender': self.user.id
             }
         )
 
     async def chat_message(self, event):
         message = event['message']
+        sender = event['sender']
 
         # Store message in Redis
         await self.store_message_in_redis(message)
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message,
+            'sender': sender
         }))
 
     @database_sync_to_async
@@ -108,14 +111,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def store_message_in_redis(self, message):
         """Store message in Redis, limiting to the last 25 messages."""
         # Store message in the Redis list for the chat room
-        await self.channel_layer.redis_instance.lpush(self.room_group_name, message)
+        redis_client.lpush(self.room_group_name, message)
         # Trim list to only keep the last 25 messages
-        await self.channel_layer.redis_instance.ltrim(self.room_group_name, 0, 24)
+        redis_client.ltrim(self.room_group_name, 0, 24)
 
     async def get_last_25_messages(self):
         """Retrieve the last 25 messages from Redis."""
         # Fetch the last 25 messages from Redis
-        messages = await self.channel_layer.redis_instance.lrange(self.room_group_name, 0, 24)
+        messages = redis_client.lrange(self.room_group_name, 0, 24)
         return [message.decode('utf-8') for message in messages]
 
     @database_sync_to_async

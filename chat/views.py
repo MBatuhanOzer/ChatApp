@@ -95,7 +95,7 @@ def logout_view(request):
     return HttpResponseRedirect(reverse("login"))
 
 @login_required(login_url="/login", redirect_field_name=None)
-def chat(request, chat_id):
+def chat(request, user2_id):
     """
     Renders the chat page.
 
@@ -103,7 +103,7 @@ def chat(request, chat_id):
     :param chat_id: The ID of the chat
     :return: A HTTP response
     """
-    chat = Chat.objects.filter(id=chat_id).first()
+    chat = Chat.objects.filter(participants__id=request.user.id).filter(participants__id=user2_id).first()
 
     if not chat:
         return HttpResponseNotFound("Chat not found.")
@@ -111,7 +111,10 @@ def chat(request, chat_id):
     if request.user not in chat.participants.all():
         return HttpResponseForbidden("You are not part of this chat.")
 
-    return render(request, "chat/chat.html", {"chat": chat})
+    return render(request, "chat/chat.html", {
+        "chat": chat,
+        "user2": get_object_or_404(User, id=user2_id),
+        })
 
 
 @login_required(login_url="/login", redirect_field_name=None)
@@ -149,4 +152,4 @@ def start_chat(request, user2_id):
         chat.save()
         chat.participants.add(request.user, user2)
 
-    return HttpResponseRedirect(reverse('chat', args=[chat.id]))
+    return HttpResponseRedirect(reverse('chat', args=[user2.id]))
