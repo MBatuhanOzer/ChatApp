@@ -6,18 +6,16 @@ from django.conf import settings
 from .models import Chat, Message, User
 
 # Create a Redis client
-redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Update with your Redis configuration
+redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Adjust Redis settings as necessary
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
 
-        # Check if user is authenticated
         if self.user.is_anonymous:
             await self.close()
             return
 
-        # Extract the other user ID from the URL
         user2_id = self.scope['url_route']['kwargs'].get('user2_id')
         if not user2_id:
             await self.close()
@@ -29,20 +27,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # Generate or retrieve a unique chat ID
         self.room_name = self.get_chat_id(self.user.id, user2_id)
         self.room_group_name = f"chat_{self.room_name}"
 
-        # Ensure chat exists or create it with both users as participants
         await self.ensure_chat_exists(self.user, user2)
 
-        # Check if the user is part of the chat
         chat_exists = await self.check_user_in_chat(self.user, self.room_name)
         if not chat_exists:
             await self.close()
             return
 
-        # Join room group
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -55,12 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Send previous messages to the WebSocket
         for message in previous_messages:
-            await self.send(text_data=json.dumps({
-                'message': message
-            }))
+            await self.send(text_data=json.dumps(message))
 
     async def disconnect(self, close_code):
-        # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -68,38 +59,44 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
+        message_content = text_data_json['message']
 
-        # Check if the user is part of the chat before saving
         chat_exists = await self.check_user_in_chat(self.user, self.room_name)
         if not chat_exists:
             await self.close()
             return
 
-        # Save message to the database synchronously
-        await self.save_message(self.room_name, self.user, message)
+        await self.save_message(self.room_name, self.user, message_content)
 
-        # Send message to room group
+        message = {
+            'type': 'chat_message',
+            'message': message_content,
+            'sender_id': self.user.id,
+            'sender_username': self.user.username
+        }
+
         await self.channel_layer.group_send(
             self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'sender': self.user.id
-            }
+            message
         )
 
     async def chat_message(self, event):
         message = event['message']
-        sender = event['sender']
+        sender_id = event['sender_id']
+        sender_username = event['sender_username']
 
         # Store message in Redis
-        await self.store_message_in_redis(message)
+        await self.store_message_in_redis({
+            'message': message,
+            'sender_id': sender_id,
+            'sender_username': sender_username
+        })
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
-            'sender': sender
+            'sender_id': sender_id,
+            'sender_username': sender_username
         }))
 
     @database_sync_to_async
@@ -109,17 +106,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         Message.objects.create(chat=chat, sender=user, content=message)
 
     async def store_message_in_redis(self, message):
-        """Store message in Redis, limiting to the last 25 messages."""
-        # Store message in the Redis list for the chat room
-        redis_client.lpush(self.room_group_name, message)
-        # Trim list to only keep the last 25 messages
+        """Store message in Redis, including sender information."""
+        redis_client.lpush(self.room_group_name, json.dumps(message))
         redis_client.ltrim(self.room_group_name, 0, 24)
 
     async def get_last_25_messages(self):
         """Retrieve the last 25 messages from Redis."""
         # Fetch the last 25 messages from Redis
         messages = redis_client.lrange(self.room_group_name, 0, 24)
-        return [message.decode('utf-8') for message in messages]
+    
+        decoded_messages = []
+        for message in messages:
+            try:
+                # Decode and load each message
+                decoded_message = json.loads(message.decode('utf-8'))
+                decoded_messages.append(decoded_message)
+            except json.JSONDecodeError:
+                # Skip messages that cannot be decoded
+                continue
+    
+        return decoded_messages
 
     @database_sync_to_async
     def check_user_in_chat(self, user, chat_id):
@@ -133,9 +139,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def ensure_chat_exists(self, user1, user2):
         """Ensure that a chat exists between the participants. Create if not."""
-        # Generate a unique chat ID
         chat = Chat.objects.filter(participants__id=user1.id).filter(participants__id=user2.id).first()
-
         if not chat:
             chat_id = self.get_chat_id(user1.id, user2.id)
             chat = Chat(id=chat_id)

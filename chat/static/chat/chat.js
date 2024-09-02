@@ -11,17 +11,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
     chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        appendMessage(data.message, data.sender === userId ? 'user' : 'other');
+        const message = data.message;
+        const senderId = data.sender_id;
+        const senderUsername = data.sender_username;
+
+        appendMessage(message, senderId === parseInt(userId) ? 'user' : 'other', senderUsername);
     };
 
     chatSocket.onclose = function (e) {
         console.error('Chat socket closed unexpectedly');
     };
 
-    function appendMessage(message, sender) {
+    function appendMessage(message, senderType, senderUsername) {
         const messageElement = document.createElement('div');
-        messageElement.classList.add('message', sender);
-        messageElement.textContent = message;
+        messageElement.classList.add('message', senderType);
+        messageElement.textContent = `${senderUsername}: ${message}`;
         chatWindow.appendChild(messageElement);
         chatWindow.scrollTop = chatWindow.scrollHeight;
     }
