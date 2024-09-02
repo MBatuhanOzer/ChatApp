@@ -1,34 +1,40 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const chatSocket = new WebSocket(
-        `ws://${window.location.host}/ws/chat/${window.chatId}/`
-    );
-
-    const chatBox = document.getElementById('chat-box');
+document.addEventListener("DOMContentLoaded", function () {
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
+    const chatWindow = document.getElementById('chat-window');
 
-    chatSocket.onmessage = function(e) {
+
+    // Initialize WebSocket connection
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/' + user2Id + '/'
+    );
+
+    chatSocket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        const messageElement = document.createElement('div');
-        messageElement.className = `message ${data.sender === 'me' ? 'right' : 'left'}`;
-        messageElement.innerHTML = `<p>${data.message}</p>`;
-        chatBox.appendChild(messageElement);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        appendMessage(data.message, data.sender === userId ? 'user' : 'other');
     };
 
-    chatSocket.onclose = function(e) {
+    chatSocket.onclose = function (e) {
         console.error('Chat socket closed unexpectedly');
     };
 
-    messageForm.onsubmit = function(e) {
-        e.preventDefault();
-        const message = messageInput.value;
-        if (message.trim() === '') return;
+    function appendMessage(message, sender) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', sender);
+        messageElement.textContent = message;
+        chatWindow.appendChild(messageElement);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
 
-        chatSocket.send(JSON.stringify({
-            'message': message
-        }));
-
-        messageInput.value = '';
-    };
+    // Handle form submission to send a message
+    messageForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const message = messageInput.value.trim();
+        if (message) {
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+            messageInput.value = ''; // Clear input field
+        }
+    });
 });

@@ -1,24 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     {% load static %}
-    <link rel="stylesheet" href="{% static 'chat/style.css' %}">
-    <script defer src="{% static 'chat/chat.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'chat/styles.css' %}">
 </head>
+
 <body>
     <div class="container">
-        <header>
-            <a href="{% url 'index' %}">Back to Chats</a>
-        </header>
-        <div class="chat-box" id="chat-box">
+        <div class="row justify-content-center">
+            <h1 class="mt-4">Chat with {{ user2.username }}</h1>
         </div>
-        <form id="message-form">
-            <textarea id="message-input" placeholder="Type your message..."></textarea>
-            <button type="submit">Send</button>
-        </form>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body chat-window" id="chat-window">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form id="message-form" class="input-group mt-3">
+                    <input type="text" class="form-control" id="message-input" placeholder="Type your message...">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">Send</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
+>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        const userId = "{{ request.user.id }}";
+        const user2Id = "{{ user2.id }}";
+    </script>
+    <script src="{% static 'chat/chat.js' %}"></script>
 </body>
+
 </html>
