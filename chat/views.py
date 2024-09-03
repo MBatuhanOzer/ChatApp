@@ -11,7 +11,20 @@ from .consumers import ChatConsumer
 
 @login_required(login_url="/login", redirect_field_name=None)
 def index(request):
-    return render(request, "chat/index.html")
+    # Fetch all chats the user is a participant of
+    chats = Chat.objects.filter(participants=request.user)
+
+    # Prepare chat data with the other participant's user ID and username
+    chat_data = []
+    for chat in chats:
+        other_participant = chat.participants.exclude(id=request.user.id).first()
+        if other_participant:
+            chat_data.append({
+                'user_id': other_participant.id,
+                'username': other_participant.username
+            })
+
+    return render(request, "chat/index.html", {"chats": chat_data})
 
         
 def login_view(request):
