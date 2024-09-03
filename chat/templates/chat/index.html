@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="{% static 'chat/style.css' %}">
+    <link rel="stylesheet" href="{% static 'chat/index.css' %}">
     <!-- Custom JavaScript -->
     <script defer src="{% static 'chat/index.js' %}"></script>
 </head>
@@ -20,16 +20,20 @@
         </header>
 
         <!-- Search Bar -->
-        <div class="search-container mb-4">
+        <div class="search-container mb-4 position-relative">
             <input type="text" id="search" class="form-control" placeholder="Search users...">
+            <!-- User Search Results Dropdown -->
+            <div class="user-search-results mt-2 position-absolute w-100" id="search-results" style="z-index: 1000;">
+                <!-- Search results will be inserted here -->
+            </div>
         </div>
+        
 
         <!-- Chat List -->
         <div class="chat-list">
             {% if chats %}
                 <div class="list-group">
                     {% for chat in chats %}
-                        <!-- Link now uses user_id instead of chat.id -->
                         <a href="{% url 'chat' chat.user_id %}" class="list-group-item list-group-item-action">
                             {{ chat.username }}
                         </a>
@@ -39,9 +43,6 @@
                 <p>No chats available.</p>
             {% endif %}
         </div>
-
-        <!-- User Search Results -->
-        <div class="user-search-results mt-4" id="search-results"></div>
     </div>
 
     <!-- Bootstrap JS and dependencies -->
