@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat</title>
     {% load static %}
-    <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom Styles -->
     <link rel="stylesheet" href="{% static 'chat/index.css' %}">
-    <!-- Custom JavaScript -->
     <script defer src="{% static 'chat/index.js' %}"></script>
 </head>
 <body>
@@ -19,17 +16,13 @@
             <a href="{% url 'logout' %}" class="btn btn-outline-secondary">Logout</a>
         </header>
 
-        <!-- Search Bar -->
         <div class="search-container mb-4 position-relative">
             <input type="text" id="search" class="form-control" placeholder="Search users...">
-            <!-- User Search Results Dropdown -->
             <div class="user-search-results mt-2 position-absolute w-100" id="search-results" style="z-index: 1000;">
-                <!-- Search results will be inserted here -->
             </div>
         </div>
         
 
-        <!-- Chat List -->
         <div class="chat-list">
             {% if chats %}
                 <div class="list-group">
@@ -44,10 +37,5 @@
             {% endif %}
         </div>
     </div>
-
-    <!-- Bootstrap JS and dependencies -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

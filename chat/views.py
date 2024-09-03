@@ -11,10 +11,14 @@ from .consumers import ChatConsumer
 
 @login_required(login_url="/login", redirect_field_name=None)
 def index(request):
-    # Fetch all chats the user is a participant of
+    """
+    Renders the index page.
+
+    :param request: The request object
+    :return: A HTTP response
+    """
     chats = Chat.objects.filter(participants=request.user)
 
-    # Prepare chat data with the other participant's user ID and username
     chat_data = []
     for chat in chats:
         other_participant = chat.participants.exclude(id=request.user.id).first()
@@ -40,23 +44,19 @@ def login_view(request):
         return HttpResponseRedirect(reverse("index"))
 
     if request.method == "POST":
-        # Get the username and password from the request
         username = request.POST.get("username", None)
         password = request.POST.get("password", None)
         if username is None or password is None:
             return render(request, "chat/login.html", {"error": "Username and password are required."})
 
-        # Authenticate the user
         user = authenticate(request, username=username, password=password)
 
-        # If the user is authenticated, log them in
         if user is not None:
             login(request, user)
             return HttpResponseRedirect(reverse("index"))
         else:
             return render(request, "chat/login.html", {"error": "Invalid username or password"})
     else:
-        # If the request is a GET request, render the login page
         return render(request, "chat/login.html")
 
 
@@ -79,13 +79,11 @@ def register(request):
         if username is None or password is None:
             return render(request, "chat/register.html", {"error": "Username and password are required."})
 
-        # Try to create user if failed return an error
         try:
             user = User.objects.create_user(username=username, password=password)
         except IntegrityError:
             return render(request, "chat/register.html", {"error": "Username already taken."})
 
-        # If the user is created, log them in
         if user is not None:
             login(request, user)
             return HttpResponseRedirect(reverse("index"))
@@ -120,7 +118,6 @@ def chat(request, user2_id):
 
     if not chat:
         return HttpResponseNotFound("Chat not found.")
-    # Check if the user is a participant in the chat
     if request.user not in chat.participants.all():
         return HttpResponseForbidden("You are not part of this chat.")
 

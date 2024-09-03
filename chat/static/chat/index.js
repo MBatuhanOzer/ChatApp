@@ -5,19 +5,16 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.addEventListener('input', async () => {
         const query = searchInput.value;
         
-        // Check if the query is empty
         if (query.trim() === '') {
             searchResults.innerHTML = '';
-            searchResults.classList.add('d-none');  // Hide search results if query is empty
+            searchResults.classList.add('d-none');  
             return;
         }
 
         try {
-            // Fetch users matching the search query
             const response = await fetch(`/search_users/?query=${query}`);
             const users = await response.json();
 
-            // If users are found, display them; otherwise, hide the results
             if (users.length > 0) {
                 searchResults.innerHTML = users.map(user => `
                     <div class="card mb-2">
@@ -27,19 +24,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `).join('');
 
-                searchResults.classList.remove('d-none');  // Show search results
+                searchResults.classList.remove('d-none');  
             } else {
                 searchResults.innerHTML = '<p class="text-muted">No users found.</p>';
-                searchResults.classList.remove('d-none');  // Show message if no users are found
+                searchResults.classList.remove('d-none');  
             }
         } catch (error) {
             console.error("Error fetching search results:", error);
             searchResults.innerHTML = '<p class="text-danger">An error occurred while searching. Please try again.</p>';
-            searchResults.classList.remove('d-none');  // Show error message
+            searchResults.classList.remove('d-none');  
         }
     });
 
-    // Handle clicks on search results to start a chat
     searchResults.addEventListener('click', event => {
         if (event.target.tagName === 'A') {
             const userId = event.target.getAttribute('data-user-id');

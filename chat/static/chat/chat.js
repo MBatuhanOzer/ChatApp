@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const message = data.message;
         const senderId = data.sender_id;
         const senderUsername = data.sender_username;
-        const timestamp = data.timestamp;  // Unique timestamp to differentiate messages
+        const timestamp = data.timestamp;  
 
         appendMessage(message, senderId === parseInt(userId) ? 'user' : 'other', senderUsername, timestamp);
     };
@@ -23,15 +23,14 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     function appendMessage(message, senderType, senderUsername, timestamp) {
-        // Check if message with this timestamp already exists to prevent duplicates
         const messageText = `${senderUsername}: ${message}`;
         const existingMessages = Array.from(chatWindow.querySelectorAll('.message'))
-            .map(msg => msg.getAttribute('data-timestamp')); // Store timestamps as attributes
+            .map(msg => msg.getAttribute('data-timestamp')); 
 
         if (!existingMessages.includes(timestamp)) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message', senderType);
-            messageElement.setAttribute('data-timestamp', timestamp);  // Unique timestamp for each message
+            messageElement.setAttribute('data-timestamp', timestamp);  
             messageElement.textContent = messageText;
             chatWindow.appendChild(messageElement);
             chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -45,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
             chatSocket.send(JSON.stringify({
                 'message': message
             }));
-            messageInput.value = ''; // Clear input field
+            messageInput.value = ''; 
         }
     });
 });
