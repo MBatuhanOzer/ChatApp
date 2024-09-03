@@ -4,9 +4,10 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.conf import settings
 from .models import Chat, Message, User
+from datetime import datetime
 
-# Create a Redis client
-redis_client = redis.Redis(host='localhost', port=6379, db=0)  # Update Redis configuration if necessary
+
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -44,11 +45,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Load last 25 messages from Redis in the correct order
         previous_messages = await self.get_last_25_messages()
 
-        # Send previous messages to the WebSocket
-        for message in reversed(previous_messages):  # Reverse to maintain correct order
+        for message in reversed(previous_messages):
             await self.send(text_data=json.dumps(message))
 
     async def disconnect(self, close_code):
@@ -66,31 +65,31 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        await self.save_message(self.room_name, self.user, message_content)
-
         message = {
-            'type': 'chat_message',
             'message': message_content,
             'sender_id': self.user.id,
-            'sender_username': self.user.username
+            'sender_username': self.user.username,
+            'timestamp': datetime.now().isoformat() 
         }
+
+        await self.save_message(self.room_name, self.user, message_content)
 
         await self.store_message_in_redis(message)
 
         await self.channel_layer.group_send(
             self.room_group_name,
-            message
+            {
+                'type': 'chat_message',
+                **message
+            }
         )
 
     async def chat_message(self, event):
-        message = event['message']
-        sender_id = event['sender_id']
-        sender_username = event['sender_username']
-
         await self.send(text_data=json.dumps({
-            'message': message,
-            'sender_id': sender_id,
-            'sender_username': sender_username
+            'message': event['message'],
+            'sender_id': event['sender_id'],
+            'sender_username': event['sender_username'],
+            'timestamp': event['timestamp']
         }))
 
     @database_sync_to_async
@@ -105,24 +104,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         redis_client.ltrim(self.room_group_name, 0, 24)
 
     async def get_last_25_messages(self):
-        """Retrieve the last 25 messages from Redis."""
-        # Fetch the last 25 messages from Redis
+        """Retrieve the last 25 messages from Redis in the correct order."""
         messages = redis_client.lrange(self.room_group_name, 0, 24)
-    
         decoded_messages = []
         for message in messages:
             try:
-                # Check if the message is not empty before decoding
                 if message:
                     decoded_message = json.loads(message.decode('utf-8'))
                     decoded_messages.append(decoded_message)
             except json.JSONDecodeError:
-                # Log the error or handle it as needed
                 print("Invalid JSON data found in Redis, skipping entry.")
                 continue
-    
         return decoded_messages
-
 
     @database_sync_to_async
     def check_user_in_chat(self, user, chat_id):

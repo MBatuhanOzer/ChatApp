@@ -13,23 +13,25 @@ document.addEventListener("DOMContentLoaded", function () {
         const message = data.message;
         const senderId = data.sender_id;
         const senderUsername = data.sender_username;
+        const timestamp = data.timestamp;  // Unique timestamp to differentiate messages
 
-        appendMessage(message, senderId === parseInt(userId) ? 'user' : 'other', senderUsername);
+        appendMessage(message, senderId === parseInt(userId) ? 'user' : 'other', senderUsername, timestamp);
     };
 
     chatSocket.onclose = function (e) {
         console.error('Chat socket closed unexpectedly');
     };
 
-    function appendMessage(message, senderType, senderUsername) {
-        // Check if message already exists to prevent duplicates
+    function appendMessage(message, senderType, senderUsername, timestamp) {
+        // Check if message with this timestamp already exists to prevent duplicates
         const messageText = `${senderUsername}: ${message}`;
         const existingMessages = Array.from(chatWindow.querySelectorAll('.message'))
-            .map(msg => msg.textContent);
+            .map(msg => msg.getAttribute('data-timestamp')); // Store timestamps as attributes
 
-        if (!existingMessages.includes(messageText)) {
+        if (!existingMessages.includes(timestamp)) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message', senderType);
+            messageElement.setAttribute('data-timestamp', timestamp);  // Unique timestamp for each message
             messageElement.textContent = messageText;
             chatWindow.appendChild(messageElement);
             chatWindow.scrollTop = chatWindow.scrollHeight;
