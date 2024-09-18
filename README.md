@@ -1,6 +1,9 @@
 # Real-Time Chat Application
 This project is a real-time chat application created as a final project for the CS50 Web Programming with Python and JavaScript course. It allows users to engage in live conversations with each other using WebSockets and the ASGI (Asynchronous Server Gateway Interface) framework. This application is a comprehensive demonstration of Django's ability to handle real-time, asynchronous communication.
 
+## Video Description
+(ChatApp)[https://youtu.be/bkoMdtYegas]
+
 ## Features
 ### User Authentication:
 
